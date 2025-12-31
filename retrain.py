@@ -20,9 +20,11 @@ FEATURE_NAMES = [f"feature_{i}" for i in range(N_FEATURES)]
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 TRAINING_DATA_PATH = os.path.join(BASE_DIR, "training_data.csv")
-MODEL_EXPORT_PATH = os.path.join(BASE_DIR, "model")  # 🔥 bundled model
+MODEL_EXPORT_PATH = os.path.join(BASE_DIR, "model")  # ✅ local bundle for FastAPI
 
-# MLflow only for tracking (local)
+# =========================
+# MLflow (TRACKING ONLY)
+# =========================
 mlflow.set_tracking_uri("sqlite:///mlflow.db")
 mlflow.set_experiment("demo_classifier_experiment")
 
@@ -45,7 +47,7 @@ X_train, X_test, y_train, y_test = train_test_split(
 X_train_df = pd.DataFrame(X_train, columns=FEATURE_NAMES)
 X_test_df = pd.DataFrame(X_test, columns=FEATURE_NAMES)
 
-# Save training data (for drift later)
+# Save training data (for drift monitoring later)
 train_df = X_train_df.copy()
 train_df["target"] = y_train
 train_df.to_csv(TRAINING_DATA_PATH, index=False)
@@ -65,7 +67,7 @@ accuracy = accuracy_score(y_test, y_pred)
 # =========================
 # LOG + EXPORT MODEL
 # =========================
-with mlflow.start_run() as run:
+with mlflow.start_run():
     mlflow.log_param("model_type", "KNN")
     mlflow.log_param("n_neighbors", 5)
     mlflow.log_param("n_features", N_FEATURES)
@@ -74,7 +76,7 @@ with mlflow.start_run() as run:
     signature = infer_signature(X_train_df, model.predict(X_train_df))
     input_example = X_train_df.iloc[:5]
 
-    # Log to MLflow (tracking only)
+    # 🔹 MLflow tracking (NO artifact storage issues)
     mlflow.sklearn.log_model(
         sk_model=model,
         artifact_path="model",
@@ -82,7 +84,11 @@ with mlflow.start_run() as run:
         input_example=input_example,
     )
 
-    # 🔥 EXPORT MODEL LOCALLY (KEY FIX)
+    # 🔥 HARD SAVE MODEL LOCALLY (FastAPI uses this)
+    if os.path.exists(MODEL_EXPORT_PATH):
+        import shutil
+        shutil.rmtree(MODEL_EXPORT_PATH)
+
     mlflow.sklearn.save_model(
         sk_model=model,
         path=MODEL_EXPORT_PATH,
@@ -90,5 +96,6 @@ with mlflow.start_run() as run:
         input_example=input_example,
     )
 
-    print(f"✅ Model trained | accuracy={accuracy:.4f}")
-    print(f"📦 Model exported to: {MODEL_EXPORT_PATH}")
+print(f"✅ Model trained successfully")
+print(f"🎯 Accuracy: {accuracy:.4f}")
+print(f"📦 Model saved at: {MODEL_EXPORT_PATH}")
