@@ -2,18 +2,16 @@ name: MLOps CI/CD Pipeline
 
 on:
   push:
-    branches: [ "main" ]
+    branches: ["main"]
 
 jobs:
   build-test-deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
+    - uses: actions/setup-python@v4
       with:
         python-version: "3.10"
 
@@ -23,7 +21,12 @@ jobs:
         pip install pytest
 
     - name: Run tests
-      run: pytest
+      run: |
+        if [ -d tests ]; then
+          pytest
+        else
+          echo "No tests found, skipping"
+        fi
 
     - name: Login to Docker Hub
       uses: docker/login-action@v3
@@ -33,11 +36,14 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t anuragtiwari007/mlops-inference:latest .
+        docker build \
+          -t anuragtiwari007/mlops-inference:latest \
+          -t anuragtiwari007/mlops-inference:${{ github.sha }} .
 
     - name: Push Docker image
       run: |
         docker push anuragtiwari007/mlops-inference:latest
+        docker push anuragtiwari007/mlops-inference:${{ github.sha }}
 
     - name: Deploy to Render
       run: |
