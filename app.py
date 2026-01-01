@@ -4,6 +4,9 @@ from typing import List
 import mlflow.pyfunc
 import pandas as pd
 import os
+from fastapi.templating import Jinja2Templates
+from fastapi.requests import Request
+from fastapi.responses import HTMLResponse
 
 # =========================
 # CONFIG
@@ -13,6 +16,7 @@ MODEL_PATH = os.path.join(BASE_DIR, "model")
 LIVE_DATA_PATH = os.path.join(BASE_DIR, "live_predictions.csv")
 
 FEATURE_NAMES = [f"feature_{i}" for i in range(15)]
+templates = Jinja2Templates(directory=os.path.join(BASE_DIR, "templates"))
 
 # =========================
 # FASTAPI APP
@@ -38,6 +42,14 @@ except Exception as e:
 # =========================
 class PredictionInput(BaseModel):
     features: List[float]
+
+
+@app.get("/ui", response_class=HTMLResponse)
+def ui(request: Request):
+    return templates.TemplateResponse(
+        "index.html",
+        {"request": request}
+    )
 
 # =========================
 # HEALTH CHECK (IMPORTANT)
