@@ -44,22 +44,24 @@ class PredictionInput(BaseModel):
     features: List[float]
 
 
-@app.get("/ui", response_class=HTMLResponse)
+@app.get("/", response_class=HTMLResponse)
 def ui(request: Request):
     return templates.TemplateResponse(
         "index.html",
         {"request": request}
     )
 
+
 # =========================
 # HEALTH CHECK (IMPORTANT)
 # =========================
-@app.get("/")
+@app.get("/health")
 def health():
     return {
         "status": "ok",
         "model_loaded": model is not None
     }
+
 
 # =========================
 # PREDICT ENDPOINT
