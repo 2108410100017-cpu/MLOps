@@ -7,6 +7,7 @@ WORKDIR /app
 # Copy requirements first (better caching)
 COPY requirements.txt .
 COPY templates ./templates
+COPY templates ./templates
 
 COPY model /app/model
 

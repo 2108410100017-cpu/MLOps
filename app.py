@@ -1,12 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
 from pydantic import BaseModel
 from typing import List
 import mlflow.pyfunc
 import pandas as pd
 import os
-from fastapi.templating import Jinja2Templates
-from fastapi.requests import Request
-from fastapi.responses import HTMLResponse
 
 # =========================
 # CONFIG
@@ -43,7 +42,9 @@ except Exception as e:
 class PredictionInput(BaseModel):
     features: List[float]
 
-
+# =========================
+# ROOT → UI (IMPORTANT)
+# =========================
 @app.get("/", response_class=HTMLResponse)
 def ui(request: Request):
     return templates.TemplateResponse(
@@ -51,9 +52,8 @@ def ui(request: Request):
         {"request": request}
     )
 
-
 # =========================
-# HEALTH CHECK (IMPORTANT)
+# HEALTH CHECK (FOR RENDER)
 # =========================
 @app.get("/health")
 def health():
@@ -62,7 +62,6 @@ def health():
         "model_loaded": model is not None
     }
 
-
 # =========================
 # PREDICT ENDPOINT
 # =========================
@@ -70,10 +69,7 @@ def health():
 def predict(data: PredictionInput):
 
     if model is None:
-        raise HTTPException(
-            status_code=500,
-            detail="Model not loaded"
-        )
+        raise HTTPException(status_code=500, detail="Model not loaded")
 
     if len(data.features) != len(FEATURE_NAMES):
         raise HTTPException(
